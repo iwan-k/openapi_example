@@ -1,0 +1,239 @@
+openapi: 3.0.3
+info:
+  title: Issues tracking API
+  description: |-
+    This is a sample Bugtracker REST API with the following specification.
+    As an API user, I should be able to:
+    - Create a bug. A bug should have a title, a body, and a status (resolved/unresolved).
+    - Edit a bug.
+    - Delete a bug.
+    - View all bugs.
+    - View a specific bug.
+    - Add a comment to a bug. A comment should have a title, and a body.
+    - Delete a comment from a bug.
+    - Mark a bug as "resolved".
+    - Mark a bug as "unresolved".
+    - View all bugs marked as "resolved".
+    - Assign the bug to a user. A user is identified by its ID.
+    
+    PATCH method allows:
+    * Delete a comment from a bug - set an empty value for the "comment" field.
+    * Assign a bug to the user
+    * Set status for the bug
+    * Add a comment to the bug
+    * Edit a bug
+  version: '1.0'
+  contact:
+    name: Ivan Kurochkin
+    email: ivkurochkin@gmail.com
+tags:
+  - name: issues
+servers:
+  - url: https://someserver.com/bugtracker/
+paths:
+  /issues/:
+    get:
+      summary: Get list of bugs
+      tags:
+        - issues
+      parameters:
+        - schema:
+            type: integer
+            example: 50
+          in: query
+          name: page_size
+          description: Number of issues on the page
+        - schema:
+            type: integer
+            example: 1
+          in: query
+          name: page
+          description: Page number
+        - schema:
+            type: string
+            example: Unresolved
+          name: status
+          in: query
+          required: false
+          description: Filter issues by status
+        - schema:
+            type: integer
+            example: 7
+          in: query
+          name: user
+          description: Filter issues by user
+          required: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a bug
+      tags:
+        - issues
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 128
+                  example: Title of the bug
+                body:
+                  type: string
+                  maxLength: 1024
+                  example: Body of the bug
+                status:
+                  $ref: '#/components/schemas/Status'
+              required:
+                - title
+                - body
+                - status
+  /issues/{id}/:
+    parameters:
+      - schema:
+          type: integer
+        name: id
+        in: path
+        required: true
+        description: Issue's id
+    get:
+      summary: Get certain issue
+      tags:
+        - issues
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    patch:
+      summary: Update the issue
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      tags:
+        - issues
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 128
+                  example: Title of the bug
+                body:
+                  type: string
+                  maxLength: 1024
+                  example: Body of the bug
+                status:
+                  $ref: '#/components/schemas/Status'
+                user:
+                  type: integer
+                  nullable: true
+                  example: 7
+                comment:
+                  nullable: true
+                  allOf:
+                    - $ref: '#/components/schemas/Comment'
+    delete:
+      summary: Delete the issue
+      responses:
+        '204':
+          description: No Content
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      tags:
+        - issues
+components:
+  schemas:
+    Issue:
+      title: Issue
+      type: object
+      description: 'Issue'
+      properties:
+        id:
+          type: number
+          example: 7
+        title:
+          type: string
+          example: Title of the issue
+        body:
+          type: string
+          example: Body of the issue
+        status:
+          $ref: '#/components/schemas/Status'
+        user:
+          $ref: '#/components/schemas/User'
+        comment:
+          $ref: '#/components/schemas/Comment'
+    Status:
+      type: string
+      description: Status of the issue
+      enum:
+        - Unresolved
+        - Resolved
+      default: Unresolved
+    User:
+      title: User
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        username:
+          type: string
+          example: w.dijkstra
+    Comment:
+      title: Comment
+      type: object
+      description: Comment on an issue
+      properties:
+        title:
+          type: string
+          example: Title of the comment 
+        body:
+          type: string
+          example: Comment's body
+      required:
+        - title
+        - body
